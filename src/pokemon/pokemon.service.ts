@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { CreatePokemonDto } from './dto/create-pokemon.dto';
 import { UpdatePokemonDto } from './dto/update-pokemon.dto';
 import { Pokemon } from './entities/pokemon.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class PokemonService {
@@ -24,12 +25,21 @@ export class PokemonService {
       const pokemon = await this.pokemonModel.create(createPokemonDto);
       return pokemon;
     } catch (error) {
-      this.handleExceptions(error)
+      this.handleExceptions(error);
     }
   }
 
-  findAll() {
-    return `This action returns all pokemon`;
+  findAll(pagintaionDto: PaginationDto) {
+
+    const {limit = 10, offset = 0} = pagintaionDto
+
+    return this.pokemonModel.find()
+                  .limit(limit)
+                  .skip(offset)
+                  .sort({
+                    no: 1
+                  })
+                  .select('-__v')
   }
 
   async findOne(term: string) {
@@ -71,7 +81,7 @@ export class PokemonService {
 
       return { ...pokemon.toJSON(), ...updatePokemonDto };
     } catch (error) {
-      this.handleExceptions(error)
+      this.handleExceptions(error);
     }
   }
 
@@ -80,14 +90,13 @@ export class PokemonService {
     // await pokemon.deleteOne();
 
     // const res = await this.pokemonModel.findByIdAndUpdate(id)
-    const { deletedCount } = await this.pokemonModel.deleteOne({_id: id})
+    const { deletedCount } = await this.pokemonModel.deleteOne({ _id: id });
 
     if (deletedCount === 0) {
-      throw new BadRequestException(`Pokemon with id "${id}" not found`)
+      throw new BadRequestException(`Pokemon with id "${id}" not found`);
     }
-    return 
+    return;
   }
-
 
   private handleExceptions(error: any) {
     if (error.code === 11000) {
@@ -99,5 +108,9 @@ export class PokemonService {
     throw new InternalServerErrorException(
       `Can't create Pokemon - Check server logs`,
     );
+  }
+
+  async fillPokemonWithSeedData(pokemon: Pokemon) {
+    await this.create(pokemon);
   }
 }
